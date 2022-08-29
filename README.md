@@ -1,4 +1,4 @@
-# Pyaphid
+# Pyaphid (Experimental)
 
 Pyaphid is a tool for detecting unwanted function calls in Python code.
 
