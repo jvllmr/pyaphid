@@ -21,7 +21,11 @@ repos:
     rev: v1.4.0
     hooks:
       - id: yesqa
-
+  - repo: https://github.com/pycqa/flake8
+    rev: "5.0.4"
+    hooks:
+      - id: flake8
+        additional_dependencies: [Flake8-pyproject]
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.0-alpha.0
     hooks:
