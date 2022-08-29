@@ -4,8 +4,6 @@ import abc
 import ast
 import typing as t
 
-import typer
-
 from pyaphid.helpers import echo_with_line_ref
 
 
@@ -51,7 +49,10 @@ def replace_alias(import_: ImportFrom | Import, path: str):
 
 
 def expand_call(call: ast.Call, imports: list[Import], import_froms: list[ImportFrom]):
-    """Expand call with the matching import string. If the call does not match an import and is not a built-in function, None is returned"""
+    """
+    Expand call with the matching import string.
+    If the call does not match an import and is not a built-in function, None is returned
+    """
     (path, basename) = get_call_signature(call)
     if "(" in path or ")" in path:
         return None
@@ -69,7 +70,7 @@ def expand_call(call: ast.Call, imports: list[Import], import_froms: list[Import
         if path:
             work_path = replace_alias(import_from, work_path)
             if work_path == imported_name or work_path.startswith(f"{imported_name}."):
-                return f"{work_path.replace(imported_name, import_from.import_string, 1)}.{basename}"
+                return f"{work_path.replace(imported_name, import_from.import_string, 1)}.{basename}"  # noqa: E501
         elif (
             import_from.alias
             and basename == import_from.alias
@@ -149,7 +150,7 @@ class VisitorMixIn(ImportsTracker):
             echo_with_line_ref(
                 self.filepath,
                 node,
-                f"Local definition  of {node.name} collides with forbidden built-in. {node.name} calls will be ignored for the rest of the file",
+                f"Local definition  of {node.name} collides with forbidden built-in. {node.name} calls will be ignored for the rest of the file",  # noqa: E501
             )
         return super().new_import_context(node)
 
