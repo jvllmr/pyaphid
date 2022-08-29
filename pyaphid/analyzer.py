@@ -144,6 +144,16 @@ class VisitorMixIn(ImportsTracker):
         self.matches: list[CallMatch] = []
         return super().__init__()
 
+    def is_forbidden(self, signature: str):
+        for pattern in self.forbidden:
+            if pattern.endswith(".*") and signature.startswith(
+                pattern.rsplit(".", 1)[0]
+            ):
+                return True
+            elif signature == pattern:
+                return True
+        return False
+
     def new_import_context(self, node: _T) -> _T:
         if node.name in self.forbidden:
             self.forbidden.remove(node.name)
@@ -156,7 +166,7 @@ class VisitorMixIn(ImportsTracker):
 
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
-        if expanded_call_signature and expanded_call_signature in self.forbidden:
+        if expanded_call_signature and self.is_forbidden(expanded_call_signature):
             self.matches.append(CallMatch(node, expanded_call_signature))
             return None
         return node
