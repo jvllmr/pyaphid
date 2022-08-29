@@ -1,0 +1,7 @@
+- id: pyaphid
+  name: "pyaphid"
+  description: "Search for forbidden function calls"
+  entry: pyaphid
+  pass_filenames: true
+  language: python
+  require_serial: true
