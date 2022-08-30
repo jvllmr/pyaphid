@@ -25,6 +25,17 @@ forbidden = [
 
 - -n / --names: `Look-up all func calls and print their identifier`
 
+## As a pre-commit hook
+
+```yaml
+- repo: https://github.com/jvllmr/pyaphid
+    rev: v0.1.2
+    hooks:
+      - id: pyaphid
+```
+
+
+
 ## Limitations
 
 ```python
