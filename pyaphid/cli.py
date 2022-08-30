@@ -73,6 +73,7 @@ def main(
     forbidden = get_forbidden_calls()
     omit = False
     exit_code = 0
+    cls: type[Transformer] | type[Visitor] | type[ExpandedCallCollector]
     if print_names_only:
         cls = ExpandedCallCollector
     elif omit:

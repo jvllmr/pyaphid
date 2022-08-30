@@ -25,20 +25,24 @@ class CallMatch(t.NamedTuple):
 
 
 def get_call_signature(call: ast.Call) -> tuple[str, str]:
-    if "value" in call.func._fields:
-        path = ""
-        basename = call.func.attr  # type: ignore
-        call_func = call.func.value  # type: ignore
-        while "value" in call_func._fields:
+    basename = ""
+    path = ""
+    if isinstance(call.func, ast.Attribute):
+        basename = call.func.attr
+        call_func = call.func.value
+        while isinstance(call_func, ast.Attribute):
             path = f".{call_func.attr}{path}"
             call_func = call_func.value
-        if "id" in call_func._fields:
+
+        if isinstance(call_func, ast.Name):
             path = call_func.id + path
-        else:
-            path = f"{call_func.func.id}(){path}"
-    else:
-        basename = call.func.id  # type: ignore
-        path = ""
+        elif isinstance(call_func, ast.Call):
+            sub_path, sub_basename = get_call_signature(call_func)
+            path = f"{sub_path}.{sub_basename}(){path}"
+
+    elif isinstance(call.func, ast.Name):
+        basename = call.func.id
+
     return (path, basename)
 
 
@@ -80,7 +84,9 @@ def expand_call(call: ast.Call, imports: list[Import], import_froms: list[Import
     return basename if not path and basename in __builtins__ else None  # type: ignore
 
 
-_T = t.TypeVar("_T", bound="ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef")
+_FuncDef = t.TypeVar(
+    "_FuncDef", bound="ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef"
+)
 
 
 class ImportsTracker(metaclass=abc.ABCMeta):
@@ -92,7 +98,7 @@ class ImportsTracker(metaclass=abc.ABCMeta):
     def generic_visit(self, node: ast.AST) -> t.Any:
         pass
 
-    def new_import_context(self, node: _T) -> _T:
+    def new_import_context(self, node: _FuncDef) -> _FuncDef:
         old_imports = self.imports.copy()
         old_import_froms = self.import_froms.copy()
         self.generic_visit(node)
@@ -103,15 +109,13 @@ class ImportsTracker(metaclass=abc.ABCMeta):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
         return self.new_import_context(node)
 
-    def visit_AsyncFunctionDef(
-        self, node: ast.AsyncFunctionDef
-    ) -> ast.AsyncFunctionDef:
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
         return self.new_import_context(node)
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> ast.ClassDef:
+    def visit_ClassDef(self, node: ast.ClassDef):
         return self.new_import_context(node)
 
-    def visit_Import(self, node: ast.Import) -> ast.Import:
+    def visit_Import(self, node: ast.Import):
         for name in node.names:
             self.imports.append(Import(node, name.name, name.asname))
         return node
@@ -141,6 +145,7 @@ class VisitorMixIn(ImportsTracker):
     def __init__(self, filepath: str, forbidden: list[str]) -> None:
         self.filepath = filepath
         self.forbidden = forbidden
+        self.ignored_forbidden: list[list[str]] = []
         self.matches: list[CallMatch] = []
         return super().__init__()
 
@@ -154,7 +159,30 @@ class VisitorMixIn(ImportsTracker):
                 return True
         return False
 
-    def new_import_context(self, node: _T) -> _T:
+    def _ignore_forbidden_assignment(self, target: ast.Name):
+        self.forbidden.remove(target.id)
+        if self.ignored_forbidden:
+            self.ignored_forbidden[-1].append(target.id)
+        echo_with_line_ref(
+            self.filepath,
+            target,
+            f"Assignment of {target.id} collides with forbidden built-in. Calls to it will be ignored within its scope",  # noqa: E501
+        )
+
+    def visit_Assign(self, node: ast.Assign):
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in self.forbidden:
+                self._ignore_forbidden_assignment(target)
+
+        return node
+
+    def visit_AnnAssign(self, node: ast.AnnAssign):
+        if isinstance(node.target, ast.Name) and node.target.id in self.forbidden:
+            self._ignore_forbidden_assignment(node.target)
+
+        return node
+
+    def new_import_context(self, node: _FuncDef) -> _FuncDef:
         if node.name in self.forbidden:
             self.forbidden.remove(node.name)
             echo_with_line_ref(
@@ -169,6 +197,18 @@ class VisitorMixIn(ImportsTracker):
         if expanded_call_signature and self.is_forbidden(expanded_call_signature):
             self.matches.append(CallMatch(node, expanded_call_signature))
             return None
+        return node
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
+        self.ignored_forbidden.append([])
+        super().visit_FunctionDef(node)
+        self.forbidden += self.ignored_forbidden.pop()
+        return node
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+        self.ignored_forbidden.append([])
+        super().visit_AsyncFunctionDef(node)
+        self.forbidden += self.ignored_forbidden.pop()
         return node
 
 
