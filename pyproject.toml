@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pyaphid"
 version = "0.1.2"
-description = "Identify debugging function calls"
+description = "Identify unwanted function calls in your code"
 authors = ["Jan Vollmer <jan@vllmr.dev>"]
 license = "MIT"
 readme="README.md"
