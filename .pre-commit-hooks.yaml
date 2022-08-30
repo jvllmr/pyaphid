@@ -4,4 +4,5 @@
   entry: pyaphid
   pass_filenames: true
   language: python
+  types: [python]
   require_serial: true

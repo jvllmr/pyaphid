@@ -34,8 +34,6 @@ forbidden = [
       - id: pyaphid
 ```
 
-
-
 ## Limitations
 
 ```python
