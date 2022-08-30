@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyaphid"
-version = "0.1.1"
+version = "0.1.2"
 description = "Identify debugging function calls"
 authors = ["Jan Vollmer <jan@vllmr.dev>"]
 license = "MIT"
