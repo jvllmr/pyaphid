@@ -41,6 +41,10 @@ forbidden = [
 from os.path import *
 dirname(".") # undetected
 
+# Pyaphid ignores relative imports
+from . import something
+something() # undetected
+
 # Pyaphid doesn't track assignments
 my_print = print
 my_print("Hello world") # undetected

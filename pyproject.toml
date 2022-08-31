@@ -13,7 +13,7 @@ typer = {extras = ["all"], version = "^0.6.1"}
 tomli = "^2.0.1"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 flake8 = "^5.0.4"
 Flake8-pyproject = "^1.1.0"
 black = "^22.6.0"
@@ -41,6 +41,7 @@ max-line-length = 100
 [tool.mypy]
 files = ["pyaphid"]
 python_version = "3.7"
+exclude= ["tests/files/.py"]
 
 
 
@@ -61,3 +62,12 @@ commands =
     pytest
 
 """
+
+[tool.pyright]
+exclude = [
+    "tests/files",
+    ".vscode/**",
+    ".venv/**",
+    ".tox/**"
+
+]

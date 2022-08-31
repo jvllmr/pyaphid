@@ -121,10 +121,11 @@ class ImportsTracker(metaclass=abc.ABCMeta):
         return node
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.ImportFrom:
-        for name in node.names:
-            self.import_froms.append(
-                ImportFrom(node, f"{node.module}.{name.name}", name.asname)
-            )
+        if node.module is not None and node.module != "__future__":
+            for name in node.names:
+                self.import_froms.append(
+                    ImportFrom(node, f"{node.module}.{name.name}", name.asname)
+                )
         return node
 
 
