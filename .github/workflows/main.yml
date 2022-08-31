@@ -30,12 +30,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
           python -m poetry install
-      - name: Linting
-        run: |
-          python -m poetry run flake8
-      - name: Typechecking
-        run: |
-          python -m poetry run mypy --install-types --non-interactive
       - name: Testing
         run: |
           python -m poetry run pytest
