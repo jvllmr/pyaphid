@@ -1,3 +1,3 @@
-from pyaphid.cli import run
+from pyaphid.cli import run  # pragma: no cover
 
-run()
+run()  # pragma: no cover

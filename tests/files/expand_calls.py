@@ -7,6 +7,7 @@ from base64 import b16decode
 from base64 import b32decode as b32
 from base64 import b64encode
 from os import chdir as annotations  # type: ignore
+from os import path
 
 import black
 import tomli
@@ -19,7 +20,7 @@ os.path.dirname(".")
 
 with open("pyproject.toml", "rb") as f:
     tomli.load(f)
-
+path.dirname(".")
 something()
 annotations(".")  # type: ignore
 b64encode(b"")

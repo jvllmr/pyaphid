@@ -84,9 +84,7 @@ def expand_call(call: ast.Call, imports: list[Import], import_froms: list[Import
     return basename if not path and basename in __builtins__ else None  # type: ignore
 
 
-_FuncDef = t.TypeVar(
-    "_FuncDef", bound="ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef"
-)
+_FuncDef = t.TypeVar("_FuncDef", bound="ast.FunctionDef | ast.AsyncFunctionDef")
 
 
 class ImportsTracker(metaclass=abc.ABCMeta):
@@ -98,7 +96,7 @@ class ImportsTracker(metaclass=abc.ABCMeta):
     def generic_visit(self, node: ast.AST) -> t.Any:
         pass
 
-    def new_import_context(self, node: _FuncDef) -> _FuncDef:
+    def _process_func_def(self, node: _FuncDef) -> _FuncDef:
         old_imports = self.imports.copy()
         old_import_froms = self.import_froms.copy()
         self.generic_visit(node)
@@ -107,13 +105,10 @@ class ImportsTracker(metaclass=abc.ABCMeta):
         return node
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        return self.new_import_context(node)
+        return self._process_func_def(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        return self.new_import_context(node)
-
-    def visit_ClassDef(self, node: ast.ClassDef):
-        return self.new_import_context(node)
+        return self._process_func_def(node)
 
     def visit_Import(self, node: ast.Import):
         for name in node.names:
@@ -136,9 +131,7 @@ class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
 
     def visit_Call(self, node: ast.Call) -> None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
-        if expanded_call_signature and expanded_call_signature not in map(
-            lambda call: call.match, self.calls
-        ):
+        if expanded_call_signature:
             self.calls.append(CallMatch(node, expanded_call_signature))
 
 
@@ -148,6 +141,7 @@ class VisitorMixIn(ImportsTracker):
         self.forbidden = forbidden
         self.ignored_forbidden: list[list[str]] = []
         self.matches: list[CallMatch] = []
+        self._in_class_context: list[ast.AST] = []
         return super().__init__()
 
     def is_forbidden(self, signature: str):
@@ -171,33 +165,39 @@ class VisitorMixIn(ImportsTracker):
         )
 
     def visit_Assign(self, node: ast.Assign):
-        for target in node.targets:
-            if isinstance(target, ast.Name) and target.id in self.forbidden:
-                self._ignore_forbidden_assignment(target)
+        if node not in self._in_class_context:
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in self.forbidden:
+                    self._ignore_forbidden_assignment(target)
 
         return node
 
     def visit_AnnAssign(self, node: ast.AnnAssign):
-        if isinstance(node.target, ast.Name) and node.target.id in self.forbidden:
-            self._ignore_forbidden_assignment(node.target)
+        if node not in self._in_class_context:
+            if isinstance(node.target, ast.Name) and node.target.id in self.forbidden:
+                self._ignore_forbidden_assignment(node.target)
 
-        return node
+            return node
 
-    def new_import_context(self, node: _FuncDef) -> _FuncDef:
-        if node.name in self.forbidden:
+    def _process_func_def(self, node: _FuncDef) -> _FuncDef:
+        if node not in self._in_class_context and node.name in self.forbidden:
             self.forbidden.remove(node.name)
             echo_with_line_ref(
                 self.filepath,
                 node,
                 f"Local definition  of {node.name} collides with forbidden built-in. {node.name} calls will be ignored for the rest of the file",  # noqa: E501
             )
-        return super().new_import_context(node)
+        return super()._process_func_def(node)
 
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
         if expanded_call_signature and self.is_forbidden(expanded_call_signature):
             self.matches.append(CallMatch(node, expanded_call_signature))
             return None
+        return node
+
+    def visit_ClassDef(self, node: ast.ClassDef):
+        self._in_class_context.extend(node.body)
         return node
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:

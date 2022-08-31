@@ -15,9 +15,9 @@ Forbidden function calls can be configured via the `pyproject.toml`:
 ```toml
 [tool.pyaphid]
 forbidden = [
-    "print",
-    "pdb.run",
-    "werkzeug.debug.*"
+    "print", # forbid print(...)
+    "pdb.run", # forbid pdb.run(...)
+    "werkzeug.debug.*" # forbid werkzeug.debug.DebuggedApplication(...), werkzeug.debug.get_machine_id(...), ...
 ]
 ```
 

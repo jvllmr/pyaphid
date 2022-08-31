@@ -2,35 +2,12 @@ from __future__ import annotations
 
 import ast
 import os
-import typing as t
 
-import tomli
 import typer
 
+from pyaphid import config
 from pyaphid.analyzer import ExpandedCallCollector, Transformer, Visitor
 from pyaphid.helpers import echo_with_line_ref
-
-
-def pyproject():
-    with open("pyproject.toml", "rb") as f:
-        return tomli.load(f)
-
-
-def get_pyaphid_toml_section() -> dict[str, t.Any] | None:
-    pyproject_toml = pyproject()
-    if "tool" in pyproject_toml:
-        if "pyaphid" in pyproject_toml["tool"]:
-            return pyproject_toml["tool"]["pyaphid"]
-    return None
-
-
-def get_forbidden_calls() -> list[str]:
-    """Ger forbidden calls from pyproject.toml"""
-    aphid_section = get_pyaphid_toml_section()
-    if aphid_section and "forbidden" in aphid_section:
-        return aphid_section["forbidden"]
-
-    return []
 
 
 def collect_python_files(files_and_dirs: list[str]):
@@ -69,14 +46,17 @@ def main(
         help="Print only the expandend names of calls in files",
     ),
 ):
+    if not files_and_dirs:
+        typer.echo("Please provide files and/or directories to check")
+        raise typer.Exit(1)
     files = collect_python_files(files_and_dirs)
-    forbidden = get_forbidden_calls()
+    forbidden = config.get_forbidden_calls()
     omit = False
     exit_code = 0
     cls: type[Transformer] | type[Visitor] | type[ExpandedCallCollector]
     if print_names_only:
         cls = ExpandedCallCollector
-    elif omit:
+    elif omit:  # pragma: no cover
         cls = Transformer
     else:
         cls = Visitor
@@ -98,8 +78,12 @@ def main(
         #    with open(filepath, "w") as f:
         #        f.write(ast.unparse(tree))
 
+    if not exit_code:
+        typer.echo("Nothing found")
+
     raise typer.Exit(exit_code if not print_names_only else 0)
 
 
-def run():
+def run():  # pragma: no cover
+
     typer.run(main)

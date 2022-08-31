@@ -1,0 +1,15 @@
+[run]
+source = pyaphid
+omit =  tests/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __str__
+    def __repr__
+    @(abc\.)?abstractmethod
+    if (t\.)?TYPE_CHECKING
+    if __name__ == .__main__.:
+
+[html]
+directory = coverage

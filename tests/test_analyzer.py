@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from pyaphid.analyzer import expand_call, get_call_signature
+from pyaphid.analyzer import (
+    ExpandedCallCollector,
+    Visitor,
+    expand_call,
+    get_call_signature,
+)
 
 
 def test_call_signatures(ast_getter, collect_calls):
@@ -13,6 +18,7 @@ def test_call_signatures(ast_getter, collect_calls):
         ("", "print"),
         ("os", "listdir"),
         ("os.path", "dirname"),
+        ("path", "dirname"),
         ("os.listdir().pop()", "encode"),
     ]
 
@@ -21,7 +27,7 @@ def test_import_tracker(ast_getter, collect_imports):
     tree = ast_getter("expand_calls")
     imports, import_froms = collect_imports(tree)
     assert len(imports) == 5
-    assert len(import_froms) == 4
+    assert len(import_froms) == 5
 
 
 def test_expand_calls(ast_getter, collect_calls, collect_imports):
@@ -37,6 +43,7 @@ def test_expand_calls(ast_getter, collect_calls, collect_imports):
         "os.path.dirname",
         "open",
         "tomli.load",
+        "os.path.dirname",
         None,
         "os.chdir",
         "base64.b64encode",
@@ -45,3 +52,37 @@ def test_expand_calls(ast_getter, collect_calls, collect_imports):
         "json.encoder.JSONEncoder",
         "black.nullcontext",
     ]
+
+
+def test_expanded_call_collector(ast_getter):
+    tree = ast_getter("expanded_call_collector")
+
+    collector = ExpandedCallCollector()
+    collector.visit(tree)
+    assert [call.match for call in collector.calls] == [
+        "os.listdir",
+        "os.path.dirname",
+        "os.listdir",
+        "os.path.dirname",
+        "print",
+        "os.listdir",
+    ], [call.match for call in collector.calls]
+
+
+def test_visitor(ast_getter):
+    tree = ast_getter("expanded_call_collector")
+    filepath = "tests/files/expanded_call_collector.py"
+    visitor = Visitor(filepath, ["os.listdir"])
+    visitor.visit(tree)
+
+    assert len(visitor.matches) == 3
+
+    visitor = Visitor(filepath, ["os.path.dirname"])
+    visitor.visit(tree)
+
+    assert len(visitor.matches) == 2
+    visitor2 = Visitor(filepath, ["os.path.*"])
+    visitor2.visit(tree)
+
+    assert len(visitor.matches) == 2
+    assert visitor2.matches == visitor.matches
