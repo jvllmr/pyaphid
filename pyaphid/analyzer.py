@@ -138,10 +138,10 @@ class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
 class VisitorMixIn(ImportsTracker):
     def __init__(self, filepath: str, forbidden: list[str]) -> None:
         self.filepath = filepath
-        self.forbidden = forbidden
+        self.forbidden = forbidden.copy()
         self.ignored_forbidden: list[list[str]] = []
         self.matches: list[CallMatch] = []
-        self._in_class_context: list[ast.AST] = []
+        self._nodes_in_class_context: list[ast.AST] = []
         return super().__init__()
 
     def is_forbidden(self, signature: str):
@@ -156,16 +156,16 @@ class VisitorMixIn(ImportsTracker):
 
     def _ignore_forbidden_assignment(self, target: ast.Name):
         self.forbidden.remove(target.id)
-        if self.ignored_forbidden:
+        if self.ignored_forbidden and target.id not in self.ignored_forbidden[-1]:
             self.ignored_forbidden[-1].append(target.id)
         echo_with_line_ref(
             self.filepath,
             target,
-            f"Assignment of {target.id} collides with forbidden built-in. Calls to it will be ignored within its scope",  # noqa: E501
+            f"Assignment of {target.id} collides with forbidden built-in. {target.id} calls will be ignored in this scope",  # noqa: E501
         )
 
     def visit_Assign(self, node: ast.Assign):
-        if node not in self._in_class_context:
+        if node not in self._nodes_in_class_context:
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id in self.forbidden:
                     self._ignore_forbidden_assignment(target)
@@ -173,19 +173,24 @@ class VisitorMixIn(ImportsTracker):
         return node
 
     def visit_AnnAssign(self, node: ast.AnnAssign):
-        if node not in self._in_class_context:
+        if node not in self._nodes_in_class_context:
             if isinstance(node.target, ast.Name) and node.target.id in self.forbidden:
                 self._ignore_forbidden_assignment(node.target)
 
             return node
 
     def _process_func_def(self, node: _FuncDef) -> _FuncDef:
-        if node not in self._in_class_context and node.name in self.forbidden:
+        if node.name in self.forbidden and node not in self._nodes_in_class_context:
             self.forbidden.remove(node.name)
+            if (
+                len(self.ignored_forbidden) > 1
+                and node.name not in self.ignored_forbidden[-2]
+            ):
+                self.ignored_forbidden[-2].append(node.name)
             echo_with_line_ref(
                 self.filepath,
                 node,
-                f"Local definition  of {node.name} collides with forbidden built-in. {node.name} calls will be ignored for the rest of the file",  # noqa: E501
+                f"Local definition of {node.name} collides with forbidden built-in. {node.name} calls will be ignored in this scope",  # noqa: E501
             )
         return super()._process_func_def(node)
 
@@ -197,7 +202,10 @@ class VisitorMixIn(ImportsTracker):
         return node
 
     def visit_ClassDef(self, node: ast.ClassDef):
-        self._in_class_context.extend(node.body)
+        old_nodes = self._nodes_in_class_context.copy()
+        self._nodes_in_class_context.extend(node.body)
+        self.generic_visit(node)
+        self._nodes_in_class_context = old_nodes
         return node
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:

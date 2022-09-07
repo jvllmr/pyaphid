@@ -14,7 +14,7 @@ def test_cli():
     try:
         main([path], print_names_only=False)
     except Exit as exc:
-        assert exc.exit_code == 2  # 2 time print in our test files
+        assert exc.exit_code == 9  # 2 time print in our test files
 
     try:
         main(["tests/files/call_signatures.py"], print_names_only=False)

@@ -1,4 +1,4 @@
-# Pyaphid (Experimental)
+# Pyaphid
 
 Pyaphid is a tool for detecting unwanted function calls in Python code.
 
@@ -29,9 +29,9 @@ forbidden = [
 
 ```yaml
 - repo: https://github.com/jvllmr/pyaphid
-    rev: v0.1.2
-    hooks:
-      - id: pyaphid
+  rev: v0.1.3
+  hooks:
+    - id: pyaphid
 ```
 
 ## Limitations

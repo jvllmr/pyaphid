@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from pyaphid.analyzer import (
     ExpandedCallCollector,
     Visitor,
@@ -86,3 +88,39 @@ def test_visitor(ast_getter):
 
     assert len(visitor.matches) == 2
     assert visitor2.matches == visitor.matches
+
+
+def test_func_name_collision(capsys: pytest.CaptureFixture, ast_getter):
+
+    tree = ast_getter("func_name_collision")
+    filepath = "tests/files/func_name_collision.py"
+    visitor = Visitor(filepath, ["print"])
+    visitor.visit(tree)
+
+    assert len(visitor.matches) == 4
+    assert [match.match for match in visitor.matches] == [
+        "print",
+        "print",
+        "print",
+        "print",
+    ]
+
+    assert (
+        capsys.readouterr().out
+        == "./tests/files/func_name_collision.py:15:8: Local definition of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/func_name_collision.py:24:0: Local definition of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
+    )
+
+
+def test_assignment_collision(capsys: pytest.CaptureFixture, ast_getter):
+    tree = ast_getter("assignment_collision")
+    filepath = "tests/files/assignment_collision.py"
+    visitor = Visitor(filepath, ["print"])
+    visitor.visit(tree)
+
+    assert len(visitor.matches) == 3
+    assert [match.match for match in visitor.matches] == ["print", "print", "print"]
+
+    assert (
+        capsys.readouterr().out
+        == "./tests/files/assignment_collision.py:12:8: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:19:0: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
+    )
