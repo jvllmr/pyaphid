@@ -1,6 +1,13 @@
 # Pyaphid
+[![PyPI version](https://badge.fury.io/py/pyaphid.svg)](https://badge.fury.io/py/pyaphid)
+[![GitHub license](https://img.shields.io/github/license/jvllmr/pyaphid)](https://github.com/jvllmr/pyaphid/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/jvllmr/pyahpid)](https://github.com/jvllmr/pyaphid/issues)
+![PyPI - Downloads](https://img.shields.io/pypi/dd/pyaphid)
+![Tests](https://github.com/jvllmr/pyaphid/actions/workflows/main.yml/badge.svg)
+![Codecov](https://img.shields.io/codecov/c/github/jvllmr/pyaphid?style=plastic)
 
-Pyaphid is a tool for detecting unwanted function calls in Python code.
+# Description
+Pyaphid is a static analysis tool for detecting unwanted function calls in Python code.
 
 ## Installation and usage
 
