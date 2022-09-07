@@ -11,6 +11,9 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+env:
+  PIP_CACHE_DIR: pip_cache
+
 jobs:
   Test:
     runs-on: ${{ matrix.os }}
@@ -25,6 +28,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache wheels
+        id: cache_wheels
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PIP_CACHE_DIR }}
+          key: ${{ matrix.os }}${{ matrix.python-version }}
       - name: Set up poetry
         uses: abatilo/actions-poetry@v2
         with:
@@ -43,6 +52,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
+      - name: Cache wheels
+        id: cache_wheels
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PIP_CACHE_DIR }}
+          key: coverage
       - name: Set up poetry
         uses: abatilo/actions-poetry@v2
         with:
