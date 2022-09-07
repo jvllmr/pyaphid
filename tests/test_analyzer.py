@@ -117,10 +117,15 @@ def test_assignment_collision(capsys: pytest.CaptureFixture, ast_getter):
     visitor = Visitor(filepath, ["print"])
     visitor.visit(tree)
 
-    assert len(visitor.matches) == 3
-    assert [match.match for match in visitor.matches] == ["print", "print", "print"]
+    assert len(visitor.matches) == 4
+    assert [match.match for match in visitor.matches] == [
+        "print",
+        "print",
+        "print",
+        "print",
+    ]
 
     assert (
         capsys.readouterr().out
-        == "./tests/files/assignment_collision.py:12:8: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:19:0: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
+        == "./tests/files/assignment_collision.py:14:8: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:29:8: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:33:0: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
     )
