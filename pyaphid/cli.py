@@ -25,6 +25,10 @@ def collect_python_files(files_and_dirs: list[str]):
     return files
 
 
+app = typer.Typer(name="pyaphid")
+
+
+@app.command()
 def main(
     files_and_dirs: list[str] = typer.Argument(
         None, show_default=False, help="Multiple files and/or directories to work with"
@@ -86,4 +90,4 @@ def main(
 
 def run():  # pragma: no cover
 
-    typer.run(main)
+    app()

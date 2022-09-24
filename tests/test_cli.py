@@ -1,32 +1,28 @@
-from click.exceptions import Exit
+from typer.testing import CliRunner
 
-from pyaphid.cli import main
+from pyaphid.cli import app
+
+runner = CliRunner()
 
 
 def test_cli():
+
     path = "tests/files"
 
-    try:
-        main([])
-    except Exit as exc:
-        assert exc.exit_code == 1
+    res = runner.invoke(app)
+    assert res.exit_code == 1
 
-    try:
-        main([path], print_names_only=False)
-    except Exit as exc:
-        assert exc.exit_code == 10  # 10 print matches in our test files
+    res = runner.invoke(app, path)
+    assert res.exit_code == 10  # 10 print matches in our test files
 
-    try:
-        main(["tests/files/call_signatures.py"], print_names_only=False)
-    except Exit as exc:
-        assert exc.exit_code == 1
+    res = runner.invoke(app, "tests/files/call_signatures.py")
+    assert res.exit_code == 1  # one print match
 
-    try:
-        main(["tests/files/expand_calls.py"], print_names_only=False)
-    except Exit as exc:
-        assert exc.exit_code == 0
+    res = runner.invoke(app, "tests/files/expand_calls.py")
+    assert res.exit_code == 0  # no print match
 
-    try:
-        main([path], print_names_only=True)
-    except Exit as exc:
-        assert exc.exit_code == 0
+    res = runner.invoke(app, [path, "--names"])
+    assert res.exit_code == 0
+
+    res = runner.invoke(app, [path, "-n"])
+    assert res.exit_code == 0
