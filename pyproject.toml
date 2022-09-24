@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyaphid"
-version = "0.1.3"
+version = "0.1.4"
 description = "Identify unwanted function calls in your code"
 authors = ["Jan Vollmer <jan@vllmr.dev>"]
 license = "MIT"

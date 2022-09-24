@@ -38,7 +38,7 @@ forbidden = [
 
 ```yaml
 - repo: https://github.com/jvllmr/pyaphid
-  rev: v0.1.3
+  rev: v0.1.4
   hooks:
     - id: pyaphid
 ```
