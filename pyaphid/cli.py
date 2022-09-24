@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import os
+import typing as t
 
 import typer
 
@@ -30,7 +31,7 @@ app = typer.Typer(name="pyaphid")
 
 @app.command()
 def main(
-    files_and_dirs: list[str] = typer.Argument(
+    files_and_dirs: t.List[str] = typer.Argument(
         None, show_default=False, help="Multiple files and/or directories to work with"
     ),
     # omit: bool = typer.Option(
