@@ -9,7 +9,7 @@ repository="https://github.com/jvllmr/pyaphid"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-typer = {extras = ["all"], version = "^0.6.1"}
+typer = {extras = ["all"], version = ">=0.6.1,<0.8.0"}
 tomli = "^2.0.1"
 
 
