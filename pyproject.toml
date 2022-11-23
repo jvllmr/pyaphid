@@ -14,7 +14,7 @@ tomli = "^2.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
-flake8 = "^5.0.4"
+flake8 = "^5.0.4 || ^6.0.0"
 Flake8-pyproject = "^1.1.0"
 black = "^22.6.0"
 pytest = "^7.1.2"
