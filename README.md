@@ -7,7 +7,7 @@
 ![Tests](https://github.com/jvllmr/pyaphid/actions/workflows/main.yml/badge.svg)
 ![Codecov](https://img.shields.io/codecov/c/github/jvllmr/pyaphid?style=plastic)
 
-# Description
+## Description
 
 Pyaphid is a static analysis tool for detecting unwanted function calls in Python code.
 
