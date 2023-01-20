@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 
+import ast_comments as astcom
 import pytest
 
 from pyaphid.analyzer import ImportsTracker
@@ -12,7 +13,7 @@ def ast_getter():
     def getter(name: str):
         name = name if name.endswith(".py") else f"{name}.py"
         with open(f"tests/files/{name}", "rb") as f:
-            return ast.parse(f.read())
+            return astcom.parse(f.read())
 
     return getter
 

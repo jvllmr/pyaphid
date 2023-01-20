@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import ast
 import os
 import typing as t
 
+import ast_comments as ast  # type :ignore
 import typer
 
 from pyaphid import config
@@ -68,9 +68,11 @@ def main(
 
     for filepath in files:
         with open(filepath, "rb") as f:
-            tree = ast.parse(f.read())
+            tree = ast.parse(f.read(), type_comments=True)
+
         visitor = cls(filepath=filepath, forbidden=forbidden)
-        visitor.visit(tree)
+        visitor.visit(tree)  # type: ignore
+
         if isinstance(visitor, ExpandedCallCollector):
             names = visitor.calls
         else:

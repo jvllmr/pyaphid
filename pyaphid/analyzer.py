@@ -6,6 +6,8 @@ import typing as t
 
 from pyaphid.helpers import echo_with_line_ref
 
+PYAPHID_IGNORE_COMMENT = "pyaphid:ignore"
+
 
 class ImportFrom(t.NamedTuple):
     value: ast.ImportFrom
@@ -84,7 +86,7 @@ def expand_call(call: ast.Call, imports: list[Import], import_froms: list[Import
     return basename if not path and basename in __builtins__ else None  # type: ignore
 
 
-_FuncDef = t.TypeVar("_FuncDef", bound="ast.FunctionDef | ast.AsyncFunctionDef")
+TFuncDef = t.TypeVar("TFuncDef", bound="ast.FunctionDef | ast.AsyncFunctionDef")
 
 
 class ImportsTracker(metaclass=abc.ABCMeta):
@@ -96,7 +98,7 @@ class ImportsTracker(metaclass=abc.ABCMeta):
     def generic_visit(self, node: ast.AST) -> t.Any:
         pass
 
-    def _process_func_def(self, node: _FuncDef) -> _FuncDef:
+    def _process_func_def(self, node: TFuncDef) -> TFuncDef:
         old_imports = self.imports.copy()
         old_import_froms = self.import_froms.copy()
         self.generic_visit(node)
@@ -136,6 +138,8 @@ class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
 
 
 class VisitorMixIn(ImportsTracker):
+    _ignore_next = False
+
     def __init__(self, filepath: str, forbidden: list[str]) -> None:
         self.filepath = filepath
         self.forbidden = forbidden.copy()
@@ -179,7 +183,7 @@ class VisitorMixIn(ImportsTracker):
 
             return node
 
-    def _process_func_def(self, node: _FuncDef) -> _FuncDef:
+    def _process_func_def(self, node: TFuncDef) -> TFuncDef:
         if node.name in self.forbidden and node not in self._nodes_in_class_context:
             self.forbidden.remove(node.name)
             if (
@@ -196,10 +200,25 @@ class VisitorMixIn(ImportsTracker):
 
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
-        if expanded_call_signature and self.is_forbidden(expanded_call_signature):
+        if (
+            not self._ignore_next
+            and expanded_call_signature
+            and self.is_forbidden(expanded_call_signature)
+        ):
             self.matches.append(CallMatch(node, expanded_call_signature))
             return None
         return node
+
+    def visit_Expr(self, node: ast.Expr):
+        if (
+            node.comments  # type: ignore
+            and node.comments[0].replace(" ", "").lower() == PYAPHID_IGNORE_COMMENT  # type: ignore
+        ):
+            self._ignore_next = True
+
+        self.generic_visit(node)
+
+        self._ignore_next = False
 
     def visit_ClassDef(self, node: ast.ClassDef):
         old_nodes = self._nodes_in_class_context.copy()

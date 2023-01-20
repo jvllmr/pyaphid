@@ -27,7 +27,22 @@ forbidden = [
     "print", # forbid print(...)
     "pdb.run", # forbid pdb.run(...)
     "werkzeug.debug.*" # forbid werkzeug.debug.DebuggedApplication(...), werkzeug.debug.get_machine_id(...), ...
+    "datetime.datetime.now" # forbid datetime.now()
 ]
+```
+
+With datetime.now for example you usually want to ignore one call to it for implementing a project-wide default function. You can use `# pyaphid: ignore` to ignore a line:
+
+```python
+from dateutil.tz import tzlocal
+from datetime import datetime
+
+def get_now():
+  # allowed
+  return datetime.now(tzlocal()) # pyaphid: ignore
+
+datetime.now() # forbidden
+
 ```
 
 ### CLI Options
@@ -38,7 +53,7 @@ forbidden = [
 
 ```yaml
 - repo: https://github.com/jvllmr/pyaphid
-  rev: v0.1.4
+  rev: v0.2.0
   hooks:
     - id: pyaphid
 ```

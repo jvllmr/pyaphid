@@ -13,7 +13,7 @@ def test_cli():
     assert res.exit_code == 1
 
     res = runner.invoke(app, path)
-    assert res.exit_code == 10  # 10 print matches in our test files
+    assert res.exit_code == 11  # 10 print matches in our test files
 
     res = runner.invoke(app, "tests/files/call_signatures.py")
     assert res.exit_code == 1  # one print match
@@ -26,3 +26,8 @@ def test_cli():
 
     res = runner.invoke(app, [path, "-n"])
     assert res.exit_code == 0
+
+
+def test_pypahid_ignore():
+    res = runner.invoke(app, "tests/files/pyaphid_ignore.py")
+    assert res.exit_code == 1
