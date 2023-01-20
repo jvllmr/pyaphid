@@ -50,7 +50,7 @@ exclude= ["tests/files/.py"]
 testpaths = ["tests"]
 
 [tool.pyaphid]
-forbidden = ["print", "datetime.datetime.now"]
+forbidden = ["print", "datetime.datetime.now", "contextlib.closing"]
 
 
 [tool.tox]

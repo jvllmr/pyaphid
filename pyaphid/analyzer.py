@@ -6,8 +6,6 @@ import typing as t
 
 from pyaphid.helpers import echo_with_line_ref
 
-PYAPHID_IGNORE_COMMENT = "pyaphid:ignore"
-
 
 class ImportFrom(t.NamedTuple):
     value: ast.ImportFrom
@@ -126,6 +124,46 @@ class ImportsTracker(metaclass=abc.ABCMeta):
         return node
 
 
+class CommentIgnore(metaclass=abc.ABCMeta):
+    _ignore_next = False
+    PYAPHID_IGNORE_COMMENT = "pyaphid:ignore"
+
+    @abc.abstractmethod
+    def generic_visit(self, node: ast.AST) -> t.Any:
+        pass
+
+    def _ignore_comment_visit(self, node: ast.AST):
+        if (
+            node.comments  # type: ignore
+            and node.comments[0].replace(" ", "").lower() == self.PYAPHID_IGNORE_COMMENT  # type: ignore # noqa: E501
+        ):
+            self._ignore_next = True
+        self.generic_visit(node)
+        self._ignore_next = False
+        return node
+
+    def visit_Expr(self, node: ast.Expr):
+        return self._ignore_comment_visit(node)
+
+    def visit_Return(self, node: ast.Return):
+        return self._ignore_comment_visit(node)
+
+    def visit_With(self, node: ast.With):
+        return self._ignore_comment_visit(node)
+
+    def visit_If(self, node: ast.If):
+        return self._ignore_comment_visit(node)
+
+    def visit_AsyncWith(self, node: ast.AsyncWith):
+        return self._ignore_comment_visit(node)
+
+    def visit_For(self, node: ast.For):
+        return self._ignore_comment_visit(node)
+
+    def visit_AsyncFor(self, node: ast.AsyncFor):
+        return self._ignore_comment_visit(node)
+
+
 class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
     def __init__(self, *args, **kw) -> None:
         self.calls: list[CallMatch] = []
@@ -137,9 +175,7 @@ class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
             self.calls.append(CallMatch(node, expanded_call_signature))
 
 
-class VisitorMixIn(ImportsTracker):
-    _ignore_next = False
-
+class VisitorMixIn(ImportsTracker, CommentIgnore):
     def __init__(self, filepath: str, forbidden: list[str]) -> None:
         self.filepath = filepath
         self.forbidden = forbidden.copy()
@@ -208,17 +244,6 @@ class VisitorMixIn(ImportsTracker):
             self.matches.append(CallMatch(node, expanded_call_signature))
             return None
         return node
-
-    def visit_Expr(self, node: ast.Expr):
-        if (
-            node.comments  # type: ignore
-            and node.comments[0].replace(" ", "").lower() == PYAPHID_IGNORE_COMMENT  # type: ignore
-        ):
-            self._ignore_next = True
-
-        self.generic_visit(node)
-
-        self._ignore_next = False
 
     def visit_ClassDef(self, node: ast.ClassDef):
         old_nodes = self._nodes_in_class_context.copy()
