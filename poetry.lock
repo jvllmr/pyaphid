@@ -2,14 +2,14 @@
 
 [[package]]
 name = "ast-comments"
-version = "0.1.3"
+version = "1.0.0"
 description = ""
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "ast_comments-0.1.3-py3-none-any.whl", hash = "sha256:1b6d2e56657b60c172041b1565dbf24bfcbf57791a734b25a98fe4112de98191"},
-    {file = "ast_comments-0.1.3.tar.gz", hash = "sha256:761657548b2946d533ef5de6382b4f72a072da9e42c3a669bfefcd41817da391"},
+    {file = "ast_comments-1.0.0-py3-none-any.whl", hash = "sha256:900306c538a65c29b08f847e5fb4bc31c2b2d9e320f96509d3dbd6ab55656656"},
+    {file = "ast_comments-1.0.0.tar.gz", hash = "sha256:383117428c4e2e30919c5dc9e742fbf6b46d4e1643c2965dadb2b8bc137cec66"},
 ]
 
 [[package]]
@@ -657,4 +657,4 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "3e3e8752d14defd327ec22c28912bde6ca987644a7ff14b21f81b29c799427f5"
+content-hash = "5f80eccb8850852951cd6dd52be9ae056137776de01d5a7a73781194e7993a70"
