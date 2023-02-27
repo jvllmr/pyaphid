@@ -139,7 +139,7 @@ class CommentIgnore(metaclass=abc.ABCMeta):
     def _is_ignore_comment(cls, comment: str):
         return comment.replace(" ", "").lower() == cls.PYAPHID_IGNORE_COMMENT
 
-    def _ignore_comment_visit(self, node: ast.AST):
+    def check_ignore_comment_visit(self, node: ast.AST):
         if hasattr(node, "body"):
             for sub_node in node.body:  # type: ignore
                 if isinstance(sub_node, ast.Comment) and self._is_ignore_comment(
@@ -153,28 +153,29 @@ class CommentIgnore(metaclass=abc.ABCMeta):
     def visit_Comment(self, node: ast.Comment):
         if self._is_ignore_comment(node.value):
             self._ignore_lines.append(node.lineno)
-        return self.generic_visit(node)
+        self.generic_visit(node)
+        return node
 
     def visit_Expr(self, node: ast.Expr):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
     def visit_Return(self, node: ast.Return):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
     def visit_With(self, node: ast.With):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
     def visit_If(self, node: ast.If):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
     def visit_AsyncWith(self, node: ast.AsyncWith):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
     def visit_For(self, node: ast.For):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
     def visit_AsyncFor(self, node: ast.AsyncFor):
-        return self._ignore_comment_visit(node)
+        return self.check_ignore_comment_visit(node)
 
 
 class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
@@ -223,15 +224,15 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id in self.forbidden:
                     self._ignore_forbidden_assignment(target)
-
+        self.generic_visit(node)
         return node
 
     def visit_AnnAssign(self, node: ast.AnnAssign):
         if node not in self._nodes_in_class_context:
             if isinstance(node.target, ast.Name) and node.target.id in self.forbidden:
                 self._ignore_forbidden_assignment(node.target)
-
-            return node
+        self.generic_visit(node)
+        return node
 
     def _process_func_def(self, node: TFuncDef) -> TFuncDef:
         if node.name in self.forbidden and node not in self._nodes_in_class_context:
