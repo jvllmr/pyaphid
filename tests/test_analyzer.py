@@ -91,7 +91,6 @@ def test_visitor(ast_getter):
 
 
 def test_func_name_collision(capsys: pytest.CaptureFixture, ast_getter):
-
     tree = ast_getter("func_name_collision")
     filepath = "tests/files/func_name_collision.py"
     visitor = Visitor(filepath, ["print"])
