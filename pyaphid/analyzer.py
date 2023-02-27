@@ -251,6 +251,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
 
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
+        self.generic_visit(node)
         if (
             node.lineno not in self._ignore_lines
             and expanded_call_signature

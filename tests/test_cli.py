@@ -6,14 +6,13 @@ runner = CliRunner()
 
 
 def test_cli():
-
     path = "tests/files"
 
     res = runner.invoke(app)
     assert res.exit_code == 1
 
     res = runner.invoke(app, path)
-    assert res.exit_code == 11  # 10 print matches in our test files
+    assert res.exit_code == 23  # 23 print matches in our test files
 
     res = runner.invoke(app, "tests/files/call_signatures.py")
     assert res.exit_code == 1  # one print match
