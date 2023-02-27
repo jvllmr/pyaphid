@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import abc
-import ast
 import typing as t
+
+import ast_comments as ast
 
 from pyaphid.helpers import echo_with_line_ref
 
@@ -125,22 +126,34 @@ class ImportsTracker(metaclass=abc.ABCMeta):
 
 
 class CommentIgnore(metaclass=abc.ABCMeta):
-    _ignore_next = False
-    PYAPHID_IGNORE_COMMENT = "pyaphid:ignore"
+    PYAPHID_IGNORE_COMMENT = "#pyaphid:ignore"
 
     @abc.abstractmethod
     def generic_visit(self, node: ast.AST) -> t.Any:
         pass
 
+    def __init__(self, *args, **kwargs) -> None:
+        self._ignore_lines: list[int] = []
+
+    @classmethod
+    def _is_ignore_comment(cls, comment: str):
+        return comment.replace(" ", "").lower() == cls.PYAPHID_IGNORE_COMMENT
+
     def _ignore_comment_visit(self, node: ast.AST):
-        if (
-            node.comments  # type: ignore
-            and node.comments[0].replace(" ", "").lower() == self.PYAPHID_IGNORE_COMMENT  # type: ignore # noqa: E501
-        ):
-            self._ignore_next = True
+        if hasattr(node, "body"):
+            for sub_node in node.body:  # type: ignore
+                if isinstance(sub_node, ast.Comment) and self._is_ignore_comment(
+                    sub_node.value
+                ):
+                    self._ignore_lines.append(sub_node.lineno)
+
         self.generic_visit(node)
-        self._ignore_next = False
         return node
+
+    def visit_Comment(self, node: ast.Comment):
+        if self._is_ignore_comment(node.value):
+            self._ignore_lines.append(node.lineno)
+        return self.generic_visit(node)
 
     def visit_Expr(self, node: ast.Expr):
         return self._ignore_comment_visit(node)
@@ -182,6 +195,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         self.ignored_forbidden: list[list[str]] = []
         self.matches: list[CallMatch] = []
         self._nodes_in_class_context: list[ast.AST] = []
+        self._ignore_lines: list[int] = []
         return super().__init__()
 
     def is_forbidden(self, signature: str):
@@ -237,7 +251,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
         if (
-            not self._ignore_next
+            node.lineno not in self._ignore_lines
             and expanded_call_signature
             and self.is_forbidden(expanded_call_signature)
         ):

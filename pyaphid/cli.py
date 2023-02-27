@@ -92,5 +92,4 @@ def main(
 
 
 def run():  # pragma: no cover
-
     app()
