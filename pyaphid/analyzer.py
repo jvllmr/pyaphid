@@ -85,7 +85,9 @@ def expand_call(call: ast.Call, imports: list[Import], import_froms: list[Import
     return basename if not path and basename in __builtins__ else None  # type: ignore
 
 
-TFuncDef = t.TypeVar("TFuncDef", bound="ast.FunctionDef | ast.AsyncFunctionDef")
+TContextDef = t.TypeVar(
+    "TContextDef", bound="ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef"
+)
 
 
 class ImportsTracker(metaclass=abc.ABCMeta):
@@ -97,7 +99,7 @@ class ImportsTracker(metaclass=abc.ABCMeta):
     def generic_visit(self, node: ast.AST) -> t.Any:
         pass
 
-    def _process_func_def(self, node: TFuncDef) -> TFuncDef:
+    def _process_new_context_def(self, node: TContextDef) -> TContextDef:
         old_imports = self.imports.copy()
         old_import_froms = self.import_froms.copy()
         self.generic_visit(node)
@@ -106,10 +108,13 @@ class ImportsTracker(metaclass=abc.ABCMeta):
         return node
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        return self._process_func_def(node)
+        return self._process_new_context_def(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        return self._process_func_def(node)
+        return self._process_new_context_def(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef):
+        return self._process_new_context_def(node)
 
     def visit_Import(self, node: ast.Import):
         for name in node.names:
@@ -234,7 +239,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         self.generic_visit(node)
         return node
 
-    def _process_func_def(self, node: TFuncDef) -> TFuncDef:
+    def _process_new_context_def(self, node: TContextDef) -> TContextDef:
         if node.name in self.forbidden and node not in self._nodes_in_class_context:
             self.forbidden.remove(node.name)
             if (
@@ -247,7 +252,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
                 node,
                 f"Local definition of {node.name} collides with forbidden built-in. {node.name} calls will be ignored in this scope",  # noqa: E501
             )
-        return super()._process_func_def(node)
+        return super()._process_new_context_def(node)
 
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
@@ -266,7 +271,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         self._nodes_in_class_context.extend(node.body)
         self.generic_visit(node)
         self._nodes_in_class_context = old_nodes
-        return node
+        return super().visit_ClassDef(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
         self.ignored_forbidden.append([])
