@@ -1,6 +1,8 @@
 from os import listdir
 
+from ...somewhere import something2  # type: ignore
 from . import something  # type: ignore
+from .somewhere import something1  # type: ignore
 
 listdir(".")
 
@@ -23,3 +25,5 @@ async def new_new_context():
 print("Hello World")
 listdir(".")
 something()
+something1()
+something2()

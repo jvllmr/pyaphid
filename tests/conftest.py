@@ -37,13 +37,15 @@ def collect_calls():
 
 @pytest.fixture()
 def collect_imports():
-    class ImportCollector(ast.NodeVisitor, ImportsTracker):
-        pass
+    def _collect_imports(file_name: str, tree: ast.AST):
+        file_name = file_name if file_name.endswith(".py") else f"{file_name}.py"
 
-    def collect(tree: ast.AST):
-        collector = ImportCollector()
+        class ImportCollector(ast.NodeVisitor, ImportsTracker):
+            pass
+
+        collector = ImportCollector(file_path=f"tests/files/{file_name}")
         collector.visit(tree)
 
         return collector.imports, collector.import_froms
 
-    return collect
+    return _collect_imports

@@ -70,7 +70,7 @@ def main(
         with open(filepath, "rb") as f:
             tree = ast.parse(f.read(), type_comments=True)
 
-        visitor = cls(filepath=filepath, forbidden=forbidden)
+        visitor = cls(file_path=filepath, forbidden=forbidden)
         visitor.visit(tree)  # type: ignore
 
         if isinstance(visitor, ExpandedCallCollector):

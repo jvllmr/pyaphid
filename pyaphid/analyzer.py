@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import abc
+import os
+import os.path
 import typing as t
 
 import ast_comments as ast
@@ -91,7 +93,8 @@ TContextDef = t.TypeVar(
 
 
 class ImportsTracker(metaclass=abc.ABCMeta):
-    def __init__(self) -> None:
+    def __init__(self, file_path: str) -> None:
+        self.file_path = file_path
         self.import_froms: list[ImportFrom] = []
         self.imports: list[Import] = []
 
@@ -122,11 +125,37 @@ class ImportsTracker(metaclass=abc.ABCMeta):
         return node
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.ImportFrom:
-        if node.module is not None and node.module != "__future__":
+        if node.module is not None and node.module != "__future__" and not node.level:
             for name in node.names:
                 self.import_froms.append(
                     ImportFrom(node, f"{node.module}.{name.name}", name.asname)
                 )
+        elif node.level:
+            dir_path = os.path.dirname(os.path.abspath(self.file_path))
+            import_path: list[str] = []
+
+            while "__init__.py" in os.listdir(dir_path):
+                dir_path, directory = dir_path.rsplit(os.path.sep, 1)
+                import_path.insert(0, directory)
+
+            if len(import_path) < node.level:
+                return node
+
+            if node.level > 1:
+                import_path = import_path[: -node.level + 1]
+
+            if node.module:
+                import_path.append(node.module)
+
+            for name in node.names:
+                self.import_froms.append(
+                    ImportFrom(
+                        node,
+                        f"{'.'.join(import_path[:])}.{name.name}",
+                        name.asname,
+                    )
+                )
+
         return node
 
 
@@ -184,9 +213,9 @@ class CommentIgnore(metaclass=abc.ABCMeta):
 
 
 class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
-    def __init__(self, *args, **kw) -> None:
+    def __init__(self, file_path: str, *args, **kw) -> None:
         self.calls: list[CallMatch] = []
-        return super().__init__()
+        return super().__init__(file_path)
 
     def visit_Call(self, node: ast.Call) -> None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
@@ -195,14 +224,15 @@ class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
 
 
 class VisitorMixIn(ImportsTracker, CommentIgnore):
-    def __init__(self, filepath: str, forbidden: list[str]) -> None:
-        self.filepath = filepath
+    def __init__(self, file_path: str, forbidden: list[str]) -> None:
+        self.file_path = file_path
         self.forbidden = forbidden.copy()
         self.ignored_forbidden: list[list[str]] = []
         self.matches: list[CallMatch] = []
         self._nodes_in_class_context: list[ast.AST] = []
         self._ignore_lines: list[int] = []
-        return super().__init__()
+        self.import_froms: list[ImportFrom] = []
+        self.imports: list[Import] = []
 
     def is_forbidden(self, signature: str):
         for pattern in self.forbidden:
@@ -219,7 +249,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         if self.ignored_forbidden and target.id not in self.ignored_forbidden[-1]:
             self.ignored_forbidden[-1].append(target.id)
         echo_with_line_ref(
-            self.filepath,
+            self.file_path,
             target,
             f"Assignment of {target.id} collides with forbidden built-in. {target.id} calls will be ignored in this scope",  # noqa: E501
         )
@@ -248,7 +278,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
             ):
                 self.ignored_forbidden[-2].append(node.name)
             echo_with_line_ref(
-                self.filepath,
+                self.file_path,
                 node,
                 f"Local definition of {node.name} collides with forbidden built-in. {node.name} calls will be ignored in this scope",  # noqa: E501
             )
@@ -269,9 +299,9 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
     def visit_ClassDef(self, node: ast.ClassDef):
         old_nodes = self._nodes_in_class_context.copy()
         self._nodes_in_class_context.extend(node.body)
-        self.generic_visit(node)
+        super().visit_ClassDef(node)
         self._nodes_in_class_context = old_nodes
-        return super().visit_ClassDef(node)
+        return node
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
         self.ignored_forbidden.append([])

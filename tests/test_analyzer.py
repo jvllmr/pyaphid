@@ -27,16 +27,16 @@ def test_call_signatures(ast_getter, collect_calls):
 
 def test_import_tracker(ast_getter, collect_imports):
     tree = ast_getter("expand_calls")
-    imports, import_froms = collect_imports(tree)
+    imports, import_froms = collect_imports("expand_calls", tree)
     assert len(imports) == 5
-    assert len(import_froms) == 5
+    assert len(import_froms) == 6
 
 
 def test_expand_calls(ast_getter, collect_calls, collect_imports):
     tree = ast_getter("expand_calls")
 
     calls = collect_calls(tree)
-    imports, import_froms = collect_imports(tree)
+    imports, import_froms = collect_imports("expand_calls", tree)
 
     expanded_calls = [expand_call(call, imports, import_froms) for call in calls]
 
@@ -46,7 +46,7 @@ def test_expand_calls(ast_getter, collect_calls, collect_imports):
         "open",
         "tomli.load",
         "os.path.dirname",
-        None,
+        "tests.files.something",
         "os.chdir",
         "base64.b64encode",
         "base64.b16decode",
@@ -59,7 +59,9 @@ def test_expand_calls(ast_getter, collect_calls, collect_imports):
 def test_expanded_call_collector(ast_getter):
     tree = ast_getter("expanded_call_collector")
 
-    collector = ExpandedCallCollector()
+    collector = ExpandedCallCollector(
+        file_path="tests/files/expanded_call_collector.py"
+    )
     collector.visit(tree)
     assert [call.match for call in collector.calls] == [
         "os.listdir",
@@ -68,6 +70,8 @@ def test_expanded_call_collector(ast_getter):
         "os.path.dirname",
         "print",
         "os.listdir",
+        "tests.files.something",
+        "tests.files.somewhere.something1",
     ], [call.match for call in collector.calls]
 
 
