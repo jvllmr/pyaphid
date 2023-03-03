@@ -6,6 +6,14 @@ authors = ["Jan Vollmer <jan@vllmr.dev>"]
 license = "MIT"
 readme="README.md"
 repository="https://github.com/jvllmr/pyaphid"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Bug Tracking",
+    "Topic :: Utilities",
+    "Typing :: Typed"
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
