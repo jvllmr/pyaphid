@@ -1,6 +1,7 @@
 from os import listdir
 
 from ...somewhere import something2  # type: ignore
+from ..somewhere import something3  # type: ignore
 from . import something  # type: ignore
 from .somewhere import something1  # type: ignore
 
@@ -27,3 +28,4 @@ listdir(".")
 something()
 something1()
 something2()
+something3()

@@ -72,6 +72,7 @@ def test_expanded_call_collector(ast_getter):
         "os.listdir",
         "tests.files.something",
         "tests.files.somewhere.something1",
+        "tests.somewhere.something3",
     ], [call.match for call in collector.calls]
 
 

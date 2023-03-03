@@ -167,7 +167,7 @@ class CommentIgnore(metaclass=abc.ABCMeta):
         pass
 
     def __init__(self, *args, **kwargs) -> None:
-        self._ignore_lines: list[int] = []
+        self._ignore_lines: list[int] = []  # pragma: no cover
 
     @classmethod
     def _is_ignore_comment(cls, comment: str):
@@ -231,8 +231,7 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         self.matches: list[CallMatch] = []
         self._nodes_in_class_context: list[ast.AST] = []
         self._ignore_lines: list[int] = []
-        self.import_froms: list[ImportFrom] = []
-        self.imports: list[Import] = []
+        super().__init__(file_path=file_path)
 
     def is_forbidden(self, signature: str):
         for pattern in self.forbidden:
