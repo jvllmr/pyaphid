@@ -102,7 +102,7 @@ class ImportsTracker(metaclass=abc.ABCMeta):
     def generic_visit(self, node: ast.AST) -> t.Any:
         pass
 
-    def _process_new_context_def(self, node: TContextDef) -> TContextDef:
+    def _process_new_scope(self, node: TContextDef) -> TContextDef:
         old_imports = self.imports.copy()
         old_import_froms = self.import_froms.copy()
         self.generic_visit(node)
@@ -111,17 +111,18 @@ class ImportsTracker(metaclass=abc.ABCMeta):
         return node
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        return self._process_new_context_def(node)
+        return self._process_new_scope(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        return self._process_new_context_def(node)
+        return self._process_new_scope(node)
 
     def visit_ClassDef(self, node: ast.ClassDef):
-        return self._process_new_context_def(node)
+        return self._process_new_scope(node)
 
     def visit_Import(self, node: ast.Import):
         for name in node.names:
             self.imports.append(Import(node, name.name, name.asname))
+        self.generic_visit(node)
         return node
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.ImportFrom:
@@ -155,7 +156,7 @@ class ImportsTracker(metaclass=abc.ABCMeta):
                         name.asname,
                     )
                 )
-
+        self.generic_visit(node)
         return node
 
 
@@ -180,7 +181,6 @@ class CommentIgnore(metaclass=abc.ABCMeta):
                     sub_node.value
                 ):
                     self._ignore_lines.append(sub_node.lineno)
-
         self.generic_visit(node)
         return node
 
@@ -188,6 +188,7 @@ class CommentIgnore(metaclass=abc.ABCMeta):
         if self._is_ignore_comment(node.value):
             self._ignore_lines.append(node.lineno)
         self.generic_visit(node)
+
         return node
 
     def visit_Expr(self, node: ast.Expr):
@@ -215,19 +216,21 @@ class CommentIgnore(metaclass=abc.ABCMeta):
 class ExpandedCallCollector(ast.NodeVisitor, ImportsTracker):
     def __init__(self, file_path: str, *args, **kw) -> None:
         self.calls: list[CallMatch] = []
-        return super().__init__(file_path)
+        super().__init__(file_path)
 
     def visit_Call(self, node: ast.Call) -> None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
         if expanded_call_signature:
             self.calls.append(CallMatch(node, expanded_call_signature))
 
+        self.generic_visit(node)
+
 
 class VisitorMixIn(ImportsTracker, CommentIgnore):
     def __init__(self, file_path: str, forbidden: list[str]) -> None:
         self.file_path = file_path
         self.forbidden = forbidden.copy()
-        self.ignored_forbidden: list[list[str]] = []
+        self.ignored_forbidden: list[str] = []
         self.matches: list[CallMatch] = []
         self._nodes_in_class_context: list[ast.AST] = []
         self._ignore_lines: list[int] = []
@@ -239,14 +242,14 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
                 pattern.rsplit(".", 1)[0]
             ):
                 return True
-            elif signature == pattern:
+            elif signature == pattern and signature not in self.ignored_forbidden:
                 return True
         return False
 
     def _ignore_forbidden_assignment(self, target: ast.Name):
-        self.forbidden.remove(target.id)
-        if self.ignored_forbidden and target.id not in self.ignored_forbidden[-1]:
-            self.ignored_forbidden[-1].append(target.id)
+        if target.id not in self.ignored_forbidden:
+            self.ignored_forbidden.append(target.id)
+
         echo_with_line_ref(
             self.file_path,
             target,
@@ -268,20 +271,19 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         self.generic_visit(node)
         return node
 
-    def _process_new_context_def(self, node: TContextDef) -> TContextDef:
+    def _process_new_scope(self, node: TContextDef) -> TContextDef:
         if node.name in self.forbidden and node not in self._nodes_in_class_context:
-            self.forbidden.remove(node.name)
-            if (
-                len(self.ignored_forbidden) > 1
-                and node.name not in self.ignored_forbidden[-2]
-            ):
-                self.ignored_forbidden[-2].append(node.name)
+            if node.name not in self.ignored_forbidden:
+                self.ignored_forbidden.append(node.name)
             echo_with_line_ref(
                 self.file_path,
                 node,
                 f"Local definition of {node.name} collides with forbidden built-in. {node.name} calls will be ignored in this scope",  # noqa: E501
             )
-        return super()._process_new_context_def(node)
+        old_ignored_forbidden = self.ignored_forbidden.copy()
+        super()._process_new_scope(node)
+        self.ignored_forbidden = old_ignored_forbidden
+        return node
 
     def visit_Call(self, node: ast.Call) -> ast.Call | None:
         expanded_call_signature = expand_call(node, self.imports, self.import_froms)
@@ -300,18 +302,6 @@ class VisitorMixIn(ImportsTracker, CommentIgnore):
         self._nodes_in_class_context.extend(node.body)
         super().visit_ClassDef(node)
         self._nodes_in_class_context = old_nodes
-        return node
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        self.ignored_forbidden.append([])
-        super().visit_FunctionDef(node)
-        self.forbidden += self.ignored_forbidden.pop()
-        return node
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        self.ignored_forbidden.append([])
-        super().visit_AsyncFunctionDef(node)
-        self.forbidden += self.ignored_forbidden.pop()
         return node
 
 
