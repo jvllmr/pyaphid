@@ -111,7 +111,7 @@ def test_func_name_collision(capsys: pytest.CaptureFixture, ast_getter):
 
     assert (
         capsys.readouterr().out
-        == "./tests/files/func_name_collision.py:15:8: Local definition of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/func_name_collision.py:24:0: Local definition of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
+        == "./tests/files/func_name_collision.py:15:9: Local definition of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/func_name_collision.py:24:1: Local definition of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
     )
 
 
@@ -131,5 +131,5 @@ def test_assignment_collision(capsys: pytest.CaptureFixture, ast_getter):
 
     assert (
         capsys.readouterr().out
-        == "./tests/files/assignment_collision.py:14:8: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:29:8: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:33:0: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
+        == "./tests/files/assignment_collision.py:14:9: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:29:9: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n./tests/files/assignment_collision.py:33:1: Assignment of print collides with forbidden built-in. print calls will be ignored in this scope\n"  # noqa: E501
     )
