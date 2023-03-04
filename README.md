@@ -53,7 +53,7 @@ datetime.now() # forbidden
 
 ```yaml
 - repo: https://github.com/jvllmr/pyaphid
-  rev: v0.3.0
+  rev: v0.3.1
   hooks:
     - id: pyaphid
 ```
