@@ -2,14 +2,14 @@
 
 [[package]]
 name = "ast-comments"
-version = "1.0.0"
+version = "1.0.1"
 description = ""
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "ast_comments-1.0.0-py3-none-any.whl", hash = "sha256:900306c538a65c29b08f847e5fb4bc31c2b2d9e320f96509d3dbd6ab55656656"},
-    {file = "ast_comments-1.0.0.tar.gz", hash = "sha256:383117428c4e2e30919c5dc9e742fbf6b46d4e1643c2965dadb2b8bc137cec66"},
+    {file = "ast_comments-1.0.1-py3-none-any.whl", hash = "sha256:c61ba2ffa54a8a5148904582b232f1159ed159858243548e03a642493df3a24f"},
+    {file = "ast_comments-1.0.1.tar.gz", hash = "sha256:129ada126a00f21d919b4b717a8a7511b8d878902708692ca44cac5fb13f2ca6"},
 ]
 
 [[package]]
